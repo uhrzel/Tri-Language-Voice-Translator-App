@@ -29,33 +29,55 @@ class _MyHomePageState extends State<MyHomePage> {
   String recognizedText = "";
   String translatedText = "";
   late stt.SpeechToText _speech;
+  bool isSpeechInitialized = false;
+  bool isRecording = false;
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
-    _speech.listen(
-      onResult: (result) {
-        setState(() {
-          recognizedText = result.recognizedWords;
-        });
+    _initializeSpeech();
+  }
+
+  Future<void> _initializeSpeech() async {
+    isSpeechInitialized = await _speech.initialize(
+      onStatus: (status) {
+        // Check if the status indicates that the system is ready
+        /*    if (status == stt.SpeechToTextStatus.ready) {
+          print("SpeechToText initialized");
+          setState(() {
+            isSpeechInitialized = true;
+          });
+        } */
       },
     );
   }
 
-/*   Future<void> startRecording() async {
-    final status = await Permission.microphone.request();
+  Future<void> startStopRecording() async {
+    if (!isSpeechInitialized) {
+      print("SpeechToText not available");
+      // Handle the case when speech recognition is not available on the device
+      return;
+    }
 
-    if (status.isGranted) {
+    if (!_speech.isListening) {
       await _speech.listen(
         onResult: (result) {
-          print("Listening Started");
+          setState(() {
+            recognizedText = result.recognizedWords;
+          });
         },
       );
     } else {
-      print("Microphone permission not granted");
+      await _speech.stop();
+      print("Listening Stopped");
+      translateText(recognizedText);
     }
-  } */
+
+    setState(() {
+      isRecording = !_speech.isListening;
+    });
+  }
 
   Future<void> stopRecording() async {
     if (_speech.isListening) {
@@ -63,21 +85,24 @@ class _MyHomePageState extends State<MyHomePage> {
       print("Listening Stopped");
       translateText(recognizedText);
     }
+
+    setState(() {
+      isRecording = false;
+    });
   }
 
   Future<void> translateText(String text) async {
-    final apiKey = 'YOUR_RAPIDAPI_KEY';
+    final apiKey = '91c79cbfa6msh6ea3a1337107653p1f24a7jsn0b4fc372ed77';
     final response = await http.post(
-      Uri.parse(
-          'https://google-translate1.p.rapidapi.com/language/translate/v2'),
+      Uri.parse('https://long-translator.p.rapidapi.com/translate'),
       headers: {
         'Content-Type': 'application/json',
-        'X-RapidAPI-Host': 'google-translate1.p.rapidapi.com',
+        'X-RapidAPI-Host': 'long-translator.p.rapidapi.com',
         'X-RapidAPI-Key': apiKey,
       },
       body: jsonEncode({
         'q': text,
-        'target': 'en', // Target language (e.g., 'en' for English)
+        'target': 'fil', // Target language (e.g., 'en' for English)
       }),
     );
 
@@ -129,10 +154,10 @@ class _MyHomePageState extends State<MyHomePage> {
               style: TextStyle(fontSize: 24),
             ),
             SizedBox(height: 30),
-            /*   ElevatedButton(
-              onPressed: startRecording,
-              child: Text('Start Recording'),
-            ), */
+            FloatingActionButton(
+              onPressed: startStopRecording,
+              child: Icon(isRecording ? Icons.stop : Icons.mic),
+            ),
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: stopRecording,
