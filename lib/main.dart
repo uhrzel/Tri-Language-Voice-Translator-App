@@ -16,6 +16,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.orange,
       ),
       home: MyHomePage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -43,7 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
     isSpeechInitialized = await _speech.initialize(
       onStatus: (status) {
         // Check if the status indicates that the system is ready
-        /*    if (status == stt.SpeechToTextStatus.ready) {
+        /* if (status == stt.SpeechToTextStatus.ready) {
           print("SpeechToText initialized");
           setState(() {
             isSpeechInitialized = true;
@@ -61,7 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     if (!_speech.isListening) {
-      await _speech.listen(
+      _speech.listen(
         onResult: (result) {
           setState(() {
             recognizedText = result.recognizedWords;
@@ -69,9 +70,9 @@ class _MyHomePageState extends State<MyHomePage> {
         },
       );
     } else {
-      await _speech.stop();
+      _speech.stop();
       print("Listening Stopped");
-      translateText(recognizedText);
+      await translateText(recognizedText);
     }
 
     setState(() {
@@ -81,9 +82,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> stopRecording() async {
     if (_speech.isListening) {
-      await _speech.stop();
+      _speech.stop();
       print("Listening Stopped");
-      translateText(recognizedText);
+
+      // Introduce a delay before translating
+      await Future.delayed(Duration(milliseconds: 500));
+
+      if (recognizedText.isNotEmpty) {
+        await translateText(recognizedText);
+      } else {
+        print("Recognized text is empty.");
+      }
     }
 
     setState(() {
@@ -92,25 +101,30 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> translateText(String text) async {
-    final apiKey = '91c79cbfa6msh6ea3a1337107653p1f24a7jsn0b4fc372ed77';
-    final response = await http.post(
-      Uri.parse('https://long-translator.p.rapidapi.com/translate'),
+    final response = await http.get(
+      Uri.parse(
+          'https://google-translate112.p.rapidapi.com/translate?text=$text&target_lang=en'),
       headers: {
-        'Content-Type': 'application/json',
-        'X-RapidAPI-Host': 'long-translator.p.rapidapi.com',
-        'X-RapidAPI-Key': apiKey,
+        'X-RapidAPI-Host': 'google-translate112.p.rapidapi.com',
+        'X-RapidAPI-Key': '3686968aebmshcade4bf93a80ee5p1474f7jsn35c24d4bd45c',
       },
-      body: jsonEncode({
-        'q': text,
-        'target': 'fil', // Target language (e.g., 'en' for English)
-      }),
     );
+    print('Response Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      setState(() {
-        translatedText = data['data']['translations'][0]['translatedText'];
-      });
+
+      // Perform null checks
+      if (data != null && data['translation'] != null) {
+        setState(() {
+          translatedText = data['translation'];
+        });
+      } else {
+        setState(() {
+          translatedText = "Translation data is not in the expected format.";
+        });
+      }
     } else {
       setState(() {
         translatedText = "Translation failed.";
