@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() {
   runApp(MyApp());
@@ -102,13 +101,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> translateText(String text) async {
-    String apiKey = dotenv.env['API_KEY'] ?? '';
     final response = await http.get(
       Uri.parse(
           'https://google-translate112.p.rapidapi.com/translate?text=$text&target_lang=en'),
       headers: {
         'X-RapidAPI-Host': 'google-translate112.p.rapidapi.com',
-        'X-RapidAPI-Key': apiKey,
+        'X-RapidAPI-Key': '3686968aebmshcade4bf93a80ee5p1474f7jsn35c24d4bd45c',
       },
     );
     print('Response Status Code: ${response.statusCode}');
